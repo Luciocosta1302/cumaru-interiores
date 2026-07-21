@@ -2,7 +2,7 @@
 
 Landing page para uma marcenaria fictícia da região amazônica, com modelo 3D interativo, funcionamento offline e layout responsivo. Projeto de estudo e portfólio.
 
-**Demo ao vivo:** https://cumaru-interioires.netlify.app/
+**Demo ao vivo:** https://agent-6a5f7e967b61331e4893f5--cumaru-interioires.netlify.app/
 
 ![Preview desktop](docs/preview-desktop.png)
 
