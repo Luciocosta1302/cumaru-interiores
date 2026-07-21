@@ -1,96 +1,73 @@
 # Cumaru Interiores — Landing Page Conceito
 
-> Landing page para uma marcenaria autoral amazônica fictícia, com modelo 3D interativo, funcionamento offline e design responsivo. Projeto de estudo/portfólio.
+Landing page para uma marcenaria fictícia da região amazônica, com modelo 3D interativo, funcionamento offline e layout responsivo. Projeto de estudo e portfólio.
 
-**🔗 Demo ao vivo:** [adicionar link após publicar]
+**Demo ao vivo:** https://cumaru-interioires.netlify.app/
 
 ![Preview desktop](docs/preview-desktop.png)
-![Preview mobile](docs/preview-mobile.png)
 
 ---
 
-## Contexto
+## Sobre o projeto
 
-**Cumaru Interiores** é uma marca fictícia criada para este estudo: uma marcenaria autoral de Belém-PA que trabalha com madeiras amazônicas de manejo certificado (cumaru, ipê, freijó). Todo o conteúdo — nomes, depoimentos, preços e história — é ficcional.
+Cumaru Interiores é uma marca fictícia criada para este estudo: uma marcenaria de Belém-PA que trabalha com madeiras amazônicas de manejo certificado (cumaru, ipê e freijó). Todo o conteúdo — nomes, depoimentos, preços e história — é ficcional.
 
-O desafio que me propus: **construir a vitrine digital ideal para um pequeno negócio do Norte do Brasil**, considerando as restrições reais da região — celulares de entrada, conexões instáveis e donos de negócio sem equipe técnica.
-
-## O problema
-
-Pequenos negócios locais raramente têm site, e quando têm, dependem de construtores pesados, cheios de dependências externas que quebram em conexão ruim. Eu queria o oposto:
-
-- Um **arquivo HTML único** que abre em qualquer navegador, até offline;
-- Visual de marca autoral, não de template;
-- Um elemento "uau" (o 3D) que funcione em celular modesto;
-- Hierarquia de informação pensada para quem decide compra pelo WhatsApp.
+O objetivo foi construir uma vitrine digital adequada à realidade de um pequeno negócio do Norte do Brasil: celulares de entrada, conexões instáveis e donos de negócio sem equipe técnica.
 
 ## Decisões de design
 
-- **Tipografia:** Playfair Display (títulos, serifada clássica) + Inter (texto), inspiradas em referências de sites de woodworking artesanal.
-- **Paleta:** creme, chocolate e caramelo — derivada das próprias amostras de madeira usadas no site. Sem cores fora do universo do material.
-- **Cards de coleção como amostras de madeira:** em vez de fotos de ambiente genéricas, cada linha de produto exibe a textura da madeira correspondente (cumaru, freijó, ipê, marupá) — o cliente escolhe pela matéria-prima, como numa marcenaria de verdade.
-- **Hierarquia mobile própria:** no celular, a ordem é título → modelo 3D → descrição → ações, com tudo centralizado. Conteúdo primeiro, efeito depois.
-- **Quebras de linha balanceadas** (`text-wrap: balance` / `pretty`) e ritmo vertical consistente entre seções.
-- **Acessibilidade de movimento:** todas as animações (scroll reveal, rotação 3D, partículas) respeitam `prefers-reduced-motion`.
+- Tipografia: Playfair Display (títulos) e Inter (texto);
+- Paleta em tons de creme, chocolate e caramelo, derivada das amostras de madeira exibidas no site;
+- Cards de coleção mostram a textura da madeira de cada linha, em vez de fotos genéricas de ambiente;
+- No mobile, a ordem do conteúdo é: título, modelo 3D, descrição e botões, com elementos centralizados;
+- As animações respeitam a preferência de movimento reduzido do usuário (prefers-reduced-motion).
 
-## Decisões técnicas
+## Otimização do modelo 3D
 
-### Pipeline do modelo 3D
+O modelo original da mesa (.obj) tinha 8,9 MB e cerca de 88 mil vértices, o que inviabilizaria o uso em celulares. A otimização foi feita em Python, sem bibliotecas de geometria:
 
-O destaque do projeto. Parti de um modelo `.obj` de mesa com **8,9 MB e ~88 mil vértices** (pernas torneadas exportadas do Blender em altíssima resolução) — inviável para web mobile. Sem bibliotecas de geometria disponíveis, escrevi o pipeline em **Python puro**:
+1. Leitura do arquivo OBJ e remoção da geometria de cena (plano de fundo);
+2. Redução de malha por agrupamento de vértices (vertex clustering) em grade 3D;
+3. Triangulação com remoção de faces degeneradas;
+4. Geração de coordenadas de textura (UV) por projeção box-mapping, já que o modelo não tinha UVs;
+5. Empacotamento dos dados em binário (Float32) codificado em base64, embutido no HTML.
 
-1. **Parse do OBJ** e descarte de geometria de cena (plano de fundo do Blender);
-2. **Decimação por vertex clustering** — agrupamento de vértices em grade 3D adaptativa ao bounding box;
-3. **Triangulação** com remoção de faces degeneradas;
-4. **Geração de UVs por box-mapping** (o modelo veio sem coordenadas de textura): cada face recebe projeção pelo eixo dominante da sua normal;
-5. **Empacotamento binário** (posições Float32 + UVs) em base64, embutido no HTML.
+Resultado: de 8,9 MB para aproximadamente 295 KB (cerca de 9,3 mil vértices), renderizados com Three.js, textura de madeira e correção de cor sRGB.
 
-**Resultado: 8,9 MB → ~295 KB de geometria** (~9,3 mil vértices), renderizada com Three.js r128, textura de madeira real com repetição, luz quente direcional e correção sRGB.
+## Como executar
 
-### Arquitetura "arquivo único"
+Para visualizar o site, basta abrir o arquivo `index.html` em um navegador. Não há dependências nem etapa de build.
 
-- Todas as 11 imagens (texturas, fotos de peças, fundo) comprimidas via Pillow e embutidas como data URIs;
-- Sem build, sem framework, sem servidor: HTML + CSS + JS vanilla em ~2 MB;
-- Fallbacks em camadas: se o CDN do Three.js falhar, a página funciona sem 3D; gradientes de madeira por trás de cada imagem caso algo não carregue.
-
-### Interação
-
-- Rotação automática suave do modelo + arrasto por mouse/toque com easing;
-- Partículas de "serragem" em queda lenta ao redor da peça;
-- Scroll reveal com `IntersectionObserver`.
-
-## Stack
-
-| Camada | Ferramenta |
-|---|---|
-| Estrutura | HTML5 + CSS3 (grid areas, custom properties) |
-| 3D | Three.js r128 (WebGL) |
-| Processamento do modelo | Python 3 (stdlib) |
-| Compressão de imagens | Python + Pillow |
-| Fontes | Google Fonts (Playfair Display, Inter) |
-
-## Como rodar
+Para regenerar o modelo 3D e as texturas, é necessário Python 3.8+ e a biblioteca Pillow:
 
 ```bash
-# não precisa de nada além de um navegador:
-# baixe cumaru-interiores.html e abra com dois cliques
+pip install Pillow
+python3 process_obj.py       # otimiza o modelo .obj e gera o payload
+python3 apply_textures.py    # comprime as texturas e injeta no HTML
 ```
 
-Para regenerar o modelo 3D a partir de um novo `.obj`:
+Observação: os scripts usam caminhos fixos do ambiente original de desenvolvimento. Ajuste as constantes no início de cada arquivo para os seus diretórios.
 
-```bash
-python3 process_obj.py   # gera o payload compacto
-python3 apply_textures.py # embute texturas e atualiza o HTML
-```
+## Implantação
 
-## Créditos e transparência
+O site é um arquivo único e estático, hospedado atualmente no Netlify. Também funciona no GitHub Pages (renomeando o arquivo para `index.html`) ou em qualquer hospedagem estática. Como todas as imagens estão embutidas no HTML, a página funciona offline.
 
-- Marca, pessoas, depoimentos e preços são **fictícios**;
-- Fotos de peças e texturas de madeira: bancos de imagem e material de referência de terceiros, usados apenas para fins de demonstração;
-- Modelo 3D da mesa: arquivo de estudo processado e otimizado por mim.
+## Tecnologias utilizadas
+
+- HTML5 e CSS3 (grid areas, custom properties), sem frameworks;
+- Three.js r128 para a renderização 3D em WebGL;
+- Python 3 (biblioteca padrão) para o processamento do modelo;
+- Pillow para a compressão das imagens;
+- Google Fonts (Playfair Display e Inter).
 
 ## Autor
 
-**Lúcio Henrique Ribeiro Costa**
-Estudante de Sistemas de Informação (UNIFESSPA) · Desenvolvedor em Marabá-PA
-[LinkedIn](adicionar) · [GitHub](adicionar)
+Lúcio Henrique Ribeiro Costa
+Estudante de Sistemas de Informação (UNIFESSPA) — Marabá-PA
+[GitHub](https://github.com/Luciocosta1302) · [LinkedIn](https://www.linkedin.com/in/luciohrcosta)
+
+## Créditos
+
+- Marca, pessoas, depoimentos e preços são fictícios;
+- Fotos de peças e texturas de madeira: bancos de imagem e materiais de referência de terceiros, usados apenas para demonstração;
+- Modelo 3D: arquivo de estudo processado e otimizado pelo autor.
